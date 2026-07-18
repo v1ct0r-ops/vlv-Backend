@@ -5,10 +5,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Obtener URL del .env o usar default según el ambiente
+# DATABASE_URL es obligatoria (config.py ya falla si no está en el .env);
+# este default nunca debería usarse en un arranque real.
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://gas_user:gas_password_secreta@db:5432/gas_db"
+    "postgresql://user:password@db:5432/db"
 )
 
 print(f" Base de datos: {DATABASE_URL}")

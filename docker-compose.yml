@@ -8,13 +8,13 @@ services:
     restart: always
     
     environment:
-      POSTGRES_USER: gas_user
-      POSTGRES_PASSWORD: gas_password_secreta
-      POSTGRES_DB: gas_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8"
-    
+
     ports:
-      - "5434:5432"
+      - "${DB_PORT}:5432"
     
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -25,7 +25,7 @@ services:
       - vlv_network
     
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gas_user -d gas_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +37,7 @@ services:
     restart: always
     
     ports:
-      - "8080:8080"
+      - "${ADMINER_PORT}:8080"
     
     environment:
       ADMINER_DEFAULT_SERVER: db
@@ -62,10 +62,10 @@ services:
       - "5000:5000"
     
     environment:
-      DATABASE_URL: postgresql://gas_user:gas_password_secreta@db:5432/gas_db
-      API_TITLE: "Inventario de Gas"
-      DEBUG: "False"
-      CORS_ORIGINS: "http://localhost:5173,http://localhost:3000"
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      API_TITLE: ${API_TITLE}
+      DEBUG: ${DEBUG}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     
     depends_on:
       db:

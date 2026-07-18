@@ -67,12 +67,7 @@ docker-compose exec db psql -U gas_user -d gas_db  # PostgreSQL CLI
 
 ### Credenciales BD (docker-compose)
 
-```
-Servidor: db (o localhost:5434 desde el host)
-Usuario:  gas_user
-Contraseña: gas_password_secreta
-BD: gas_db
-```
+Servidor `db` (o `localhost:${DB_PORT}` desde el host) — usuario, contraseña y BD se definen en tu `.env` local (`DB_USER`, `DB_PASSWORD`, `DB_NAME`), nunca hardcodeados en el repo. Ver `.env.example`.
 
 ## Levantar en local sin Docker
 
