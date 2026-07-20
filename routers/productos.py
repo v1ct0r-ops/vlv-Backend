@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from core.database import get_db
+from core.deps import get_current_user
+from models.usuario import Usuario
 from models.producto import Producto
 from models.movimiento import MovimientoInventario
 from schemas.producto import (
@@ -11,12 +13,23 @@ from schemas.producto import (
 )
 from fastapi import HTTPException
 
-router = APIRouter(prefix="/productos", tags=["Productos"])
+router = APIRouter(
+    prefix="/productos",
+    tags=["Productos"],
+    dependencies=[Depends(get_current_user)],
+)
 
-# solo puede existir 1 producto por formato (maximo los 5 formatos de gas)
+# solo puede existir 1 producto por formato (maximo los 5 formatos de gas) POR empresa
 @router.post("/", response_model= ProductoRead)
-def crear_producto(producto: ProductoCreate, db: Session= Depends(get_db)):
-    existe = db.query(Producto).filter(Producto.formato == producto.formato.value).first()
+def crear_producto(
+    producto: ProductoCreate,
+    current: Usuario = Depends(get_current_user),
+    db: Session= Depends(get_db),
+):
+    existe = db.query(Producto).filter(
+        Producto.formato == producto.formato.value,
+        Producto.empresa_id == current.empresa_id,
+    ).first()
     if existe:
         raise HTTPException(
             status_code=409,
@@ -27,6 +40,7 @@ def crear_producto(producto: ProductoCreate, db: Session= Depends(get_db)):
         **producto.model_dump(),
         kg_por_unidad=KG_POR_FORMATO[producto.formato],
         comision_unitaria=COMISION_POR_FORMATO[producto.formato],
+        empresa_id=current.empresa_id,
     )
     db.add(nuevo_producto)
     db.commit()
@@ -35,13 +49,23 @@ def crear_producto(producto: ProductoCreate, db: Session= Depends(get_db)):
 
 # maximo 5 productos, uno por formato
 @router.get("/", response_model=List[ProductoRead])
-def listar_productos(db: Session = Depends(get_db)):
-    return db.query(Producto).all()
+def listar_productos(
+    current: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return db.query(Producto).filter(Producto.empresa_id == current.empresa_id).all()
 
 
 @router.get("/{producto_id}", response_model=ProductoRead)
-def obtener_producto(producto_id: int, db:Session = Depends(get_db)):
-    producto = db.query(Producto).filter(Producto.id == producto_id).first()
+def obtener_producto(
+    producto_id: int,
+    current: Usuario = Depends(get_current_user),
+    db:Session = Depends(get_db),
+):
+    producto = db.query(Producto).filter(
+        Producto.id == producto_id,
+        Producto.empresa_id == current.empresa_id,
+    ).first()
     if not producto:
         raise HTTPException(status_code = 404, detail = "Producto no encontrado")
     return producto
@@ -50,8 +74,16 @@ def obtener_producto(producto_id: int, db:Session = Depends(get_db)):
 
 # el formato no se puede cambiar para no romper la coherencia del inventario
 @router.put("/{producto_id}", response_model= ProductoRead)
-def actualizar_producto(producto_id: int, datos: ProductoUpdate, db: Session= Depends(get_db)):
-    producto = db.query(Producto).filter(Producto.id == producto_id).first()
+def actualizar_producto(
+    producto_id: int,
+    datos: ProductoUpdate,
+    current: Usuario = Depends(get_current_user),
+    db: Session= Depends(get_db),
+):
+    producto = db.query(Producto).filter(
+        Producto.id == producto_id,
+        Producto.empresa_id == current.empresa_id,
+    ).first()
     if not producto:
         raise HTTPException(status_code=404, detail= "Producto no encontrado")
 
@@ -63,13 +95,21 @@ def actualizar_producto(producto_id: int, datos: ProductoUpdate, db: Session= De
     return producto
 
 @router.delete("/{producto_id}")
-def eliminar_producto(producto_id: int, db: Session = Depends(get_db)):
-    producto = db.query(Producto).filter(Producto.id == producto_id).first()
+def eliminar_producto(
+    producto_id: int,
+    current: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    producto = db.query(Producto).filter(
+        Producto.id == producto_id,
+        Producto.empresa_id == current.empresa_id,
+    ).first()
     if not producto:
         raise HTTPException(status_code= 404, detail= "Producto no encontrado")
 
     tiene_movimientos = db.query(MovimientoInventario).filter(
-        MovimientoInventario.producto_id == producto_id
+        MovimientoInventario.producto_id == producto_id,
+        MovimientoInventario.empresa_id == current.empresa_id,
     ).first()
     if tiene_movimientos:
         raise HTTPException(

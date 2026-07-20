@@ -2,16 +2,29 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from core.database import get_db
+from core.deps import get_current_user
+from models.usuario import Usuario
 from models.producto import Producto
 from models.movimiento import MovimientoInventario
 from schemas.movimiento import MovimientoCreate, MovimientoRead
 from schemas.paginacion import Pagina, paginar
 
-router = APIRouter(prefix="/movimientos", tags=["Movimientos"])
+router = APIRouter(
+    prefix="/movimientos",
+    tags=["Movimientos"],
+    dependencies=[Depends(get_current_user)],
+)
 
 @router.post("/", response_model=MovimientoRead)
-def registrar_venta(datos: MovimientoCreate, db: Session = Depends(get_db)):
-    producto = db.query(Producto).filter(Producto.id == datos.producto_id).first()
+def registrar_venta(
+    datos: MovimientoCreate,
+    current: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    producto = db.query(Producto).filter(
+        Producto.id == datos.producto_id,
+        Producto.empresa_id == current.empresa_id,
+    ).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
@@ -27,6 +40,7 @@ def registrar_venta(datos: MovimientoCreate, db: Session = Depends(get_db)):
         cantidad= datos.cantidad,
         precio_unitario = datos.precio_unitario,
         total=total,
+        empresa_id=current.empresa_id,
     )
 
     db.add(nuevo_movimiento)
@@ -37,6 +51,14 @@ def registrar_venta(datos: MovimientoCreate, db: Session = Depends(get_db)):
 
 # listado paginado de 10 para no sobrecargar la base de datos
 @router.get("/", response_model=Pagina[MovimientoRead])
-def listar_movimientos(page: int = Query(default=1, ge=1), db: Session = Depends(get_db)):
-    query = db.query(MovimientoInventario).order_by(MovimientoInventario.fecha.desc())
+def listar_movimientos(
+    page: int = Query(default=1, ge=1),
+    current: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    query = (
+        db.query(MovimientoInventario)
+        .filter(MovimientoInventario.empresa_id == current.empresa_id)
+        .order_by(MovimientoInventario.fecha.desc())
+    )
     return paginar(query, page)

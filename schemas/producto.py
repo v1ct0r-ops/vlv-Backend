@@ -46,6 +46,7 @@ class ProductoRead(ProductoBase):
     stock_actual: int
     kg_por_unidad: int
     comision_unitaria: float
+    empresa_id: int
 
     class Config:
         from_attributes = True

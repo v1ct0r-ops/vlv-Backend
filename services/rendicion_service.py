@@ -13,11 +13,12 @@ class RendicionService:
     def __init__(self, db: Session):
         self.db = db
 
-    def registrar_rendicion(self, chofer: str, datos: RendicionCreate):
+    def registrar_rendicion(self, chofer: str, datos: RendicionCreate, empresa_id: int):
         """
         Registra la rendicion completa del chofer (documento independiente).
         Valida que lo vendido no supere el stock del inventario: si una linea
         no alcanza, se rechaza TODO (rollback) y no se guarda nada.
+        empresa_id lo impone el usuario autenticado (multi-tenant).
         """
         try:
             rendicion = Rendicion(
@@ -25,6 +26,7 @@ class RendicionService:
                 bencina=Decimal(datos.bencina),
                 comision_pagada=datos.comision_pagada,
                 observaciones=datos.observaciones,
+                empresa_id=empresa_id,
             )
             self.db.add(rendicion)
             self.db.flush()
@@ -34,8 +36,10 @@ class RendicionService:
             total_comision = Decimal(0)
 
             for venta in datos.ventas:
+                # producto del mismo tenant: no se vende stock de otra empresa
                 producto = self.db.query(Producto).filter(
-                    Producto.id == venta.producto_id
+                    Producto.id == venta.producto_id,
+                    Producto.empresa_id == empresa_id,
                 ).first()
                 if not producto:
                     raise ValueError(f"Producto {venta.producto_id} no encontrado")
@@ -70,6 +74,7 @@ class RendicionService:
                     precio_unitario=venta.precio_unitario,
                     total=subtotal,
                     tipo=TipoMovimiento.VENTA.value,
+                    empresa_id=empresa_id,
                 ))
 
                 total_ventas += subtotal
@@ -116,14 +121,17 @@ class RendicionService:
             raise
 
     def rendiciones_cerradas_chofer(
-        self, chofer: str, mes: Optional[int] = None, anio: Optional[int] = None
+        self, chofer: str, empresa_id: int, mes: Optional[int] = None, anio: Optional[int] = None
     ):
         """
         Todas las rendiciones "cerradas" del chofer, sin paginar.
         No existe un estado borrador: toda rendicion registrada ya es descargable
         en PDF desde su creacion, por lo que "cerrada" = toda Rendicion existente.
         """
-        query = self.db.query(Rendicion).filter(Rendicion.chofer == chofer)
+        query = self.db.query(Rendicion).filter(
+            Rendicion.chofer == chofer,
+            Rendicion.empresa_id == empresa_id,
+        )
         if mes is not None:
             query = query.filter(extract("month", Rendicion.fecha) == mes)
         if anio is not None:
@@ -131,9 +139,11 @@ class RendicionService:
         rendiciones = query.order_by(Rendicion.fecha.desc()).all()
         return [self.formatear_rendicion(r) for r in rendiciones]
 
-    def obtener_rendicion(self, rendicion_id: int):
+    def obtener_rendicion(self, rendicion_id: int, empresa_id: int):
+        # scoping por tenant: una empresa no puede leer rendiciones de otra
         rendicion = self.db.query(Rendicion).filter(
-            Rendicion.id == rendicion_id
+            Rendicion.id == rendicion_id,
+            Rendicion.empresa_id == empresa_id,
         ).first()
         if not rendicion:
             raise ValueError(f"Rendicion {rendicion_id} no encontrada")
@@ -151,7 +161,8 @@ class RendicionService:
         ventas_formateadas = []
         for venta in ventas:
             producto = self.db.query(Producto).filter(
-                Producto.id == venta.producto_id
+                Producto.id == venta.producto_id,
+                Producto.empresa_id == rendicion.empresa_id,
             ).first()
             ventas_formateadas.append({
                 "producto": f"{producto.nombre} {producto.formato}",

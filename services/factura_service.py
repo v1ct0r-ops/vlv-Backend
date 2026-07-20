@@ -11,23 +11,27 @@ class FacturaService:
     def __init__(self, db: Session):
         self.db = db
 
-    def registrar_ingreso(self, datos: IngresoFacturaCreate):
+    def registrar_ingreso(self, datos: IngresoFacturaCreate, empresa_id: int):
         """
         Registra el ingreso de stock por factura (grupo de formatos).
         Todo en una sola transaccion: si un item falla, no se ingresa nada.
+        empresa_id lo impone el usuario autenticado (multi-tenant).
         """
         try:
             factura = IngresoFactura(
                 numero_factura=datos.numero_factura,
                 proveedor=datos.proveedor,
                 observaciones=datos.observaciones,
+                empresa_id=empresa_id,
             )
             self.db.add(factura)
             self.db.flush()
 
             for item in datos.items:
+                # el producto debe ser del mismo tenant: nadie ingresa stock a otra empresa
                 producto = self.db.query(Producto).filter(
-                    Producto.id == item.producto_id
+                    Producto.id == item.producto_id,
+                    Producto.empresa_id == empresa_id,
                 ).first()
                 if not producto:
                     raise ValueError(f"Producto {item.producto_id} no encontrado")
@@ -54,6 +58,7 @@ class FacturaService:
                     precio_unitario=item.costo_unitario or 0,
                     total=subtotal or 0,
                     tipo=TipoMovimiento.INGRESO_FACTURA.value,
+                    empresa_id=empresa_id,
                 ))
 
             self.db.commit()
@@ -63,9 +68,11 @@ class FacturaService:
             self.db.rollback()
             raise
 
-    def obtener_factura(self, factura_id: int):
+    def obtener_factura(self, factura_id: int, empresa_id: int):
+        # scoping por tenant: una empresa no puede leer facturas de otra
         factura = self.db.query(IngresoFactura).filter(
-            IngresoFactura.id == factura_id
+            IngresoFactura.id == factura_id,
+            IngresoFactura.empresa_id == empresa_id,
         ).first()
         if not factura:
             raise ValueError(f"Factura {factura_id} no encontrada")
@@ -84,7 +91,8 @@ class FacturaService:
         hay_costos = False
         for detalle in detalles:
             producto = self.db.query(Producto).filter(
-                Producto.id == detalle.producto_id
+                Producto.id == detalle.producto_id,
+                Producto.empresa_id == factura.empresa_id,
             ).first()
             items.append({
                 "producto": f"{producto.nombre} {producto.formato}",
