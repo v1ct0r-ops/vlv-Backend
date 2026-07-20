@@ -10,6 +10,7 @@ class IngresoFactura(Base):
     proveedor = Column(String(100), nullable=False)
     fecha = Column(DateTime, default=datetime.now)
     observaciones = Column(String(500), nullable=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)  # tenant
 
 
 class IngresoFacturaDetalle(Base):

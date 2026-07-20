@@ -18,4 +18,5 @@ class MovimientoInventario(Base):
     total = Column(Numeric(10,2), nullable=False)
     tipo = Column(String(20), default="VENTA")
     fecha = Column(DateTime, default=datetime.now)
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)  # tenant
 

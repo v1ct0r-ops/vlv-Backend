@@ -22,6 +22,7 @@ class Rendicion(Base):
     comision_pagada = Column(Boolean, nullable=False, default=False) # True = se descuenta del efectivo, False = retenida
     efectivo_a_rendir = Column(Numeric(12,2), nullable=False, default=0)
     observaciones = Column(String(500), nullable=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)  # tenant
 
 
 class RendicionVenta(Base):
