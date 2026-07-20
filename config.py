@@ -5,6 +5,15 @@ class Settings(BaseSettings):
     API_TITLE: str = "Inventario de Gas"
     DEBUG: bool = False
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+
+    # Auth / JWT
+    SECRET_KEY: str                        # obligatoria: firma los tokens. Si falta, la app no arranca.
+    ALGORITHM: str = "HS256"               # HMAC-SHA256: firma simétrica con SECRET_KEY
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # vida del access token
+
+    # Seed del admin inicial (opcional)
+    SEED_ADMIN_EMAIL: str | None = None
+    SEED_ADMIN_PASSWORD: str | None = None
     
     class Config:
         env_file = ".env"
