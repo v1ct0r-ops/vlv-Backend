@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # DATABASE_URL es obligatoria (config.py ya falla si no está en el .env);
-# este default nunca debería usarse en un arranque real.
+# este default nunca debería usarse en
+#  un arranque real.
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://user:password@db:5432/db"
