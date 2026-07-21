@@ -1,0 +1,90 @@
+version: '3.9'
+
+services:
+  # BASE DE DATOS 
+  db:
+    image: postgres:15-alpine
+    container_name: vlv_postgres_db
+    restart: always
+    
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+
+    ports:
+      - "${DB_PORT}:5432"
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Opcional: Script de inicialización
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    
+    networks:
+      - vlv_network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  #  VISUALIZADOR (ADMIN) 
+  adminer:
+    image: adminer:latest
+    container_name: vlv_adminer
+    restart: always
+    
+    ports:
+      - "${ADMINER_PORT}:8080"
+    
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    
+    depends_on:
+      db:
+        condition: service_healthy
+    
+    networks:
+      - vlv_network
+
+  #  API FASTAPI 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    container_name: vlv_api_fastapi
+    restart: always
+    
+    ports:
+      - "5000:5000"
+    
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      API_TITLE: ${API_TITLE}
+      DEBUG: ${DEBUG}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    
+    depends_on:
+      db:
+        condition: service_healthy
+
+    command: uvicorn main:app --host 0.0.0.0 --port 5000 --reload
+
+    volumes:
+      - .:/app  # Hot reload en desarrollo
+
+    networks:
+      - vlv_network
+
+#  VOLÚMENES 
+volumes:
+  postgres_data:
+    driver: local
+
+#  REDES 
+networks:
+  vlv_network:
+    driver: bridge
