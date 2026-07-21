@@ -25,5 +25,8 @@ jobs:
 
       # conftest.py setea DATABASE_URL=sqlite y SECRET_KEY solos,
       # asi que no hacen falta secretos aca.
+      # `python -m pytest` (con -m) agrega la raiz del repo a sys.path,
+      # asi pytest encuentra los paquetes core/, main.py, etc.
+      # `pytest` pelado NO lo hace y da ModuleNotFoundError: No module named 'core'.
       - name: Correr tests
-        run: pytest -q
+        run: python -m pytest -q
