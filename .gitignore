@@ -26,10 +26,10 @@ pip-delete-this-directory.txt
 *.sqlite3
 postgres_data/
 
-# Ambiente
+# Ambiente — ignora TODOS los .env* (dev, qa, prod...) menos la plantilla
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # OS
 .DS_Store
