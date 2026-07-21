@@ -1,0 +1,29 @@
+name: CI
+
+# Corre en cada Pull Request dirigido a QA o main.
+# Si pytest falla, GitHub bloquea el merge (status check obligatorio).
+on:
+  pull_request:
+    branches: [QA, main]
+
+jobs:
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      # conftest.py setea DATABASE_URL=sqlite y SECRET_KEY solos,
+      # asi que no hacen falta secretos aca.
+      - name: Correr tests
+        run: pytest -q
