@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     SEED_ADMIN_EMAIL: str | None = None
     SEED_ADMIN_PASSWORD: str | None = None
     
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parsea CORS_ORIGINS (coma-separado) limpiando espacios y vacíos.
+        Evita que 'http://a, http://b' deje un origin ' http://b' que nunca machea."""
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
     class Config:
         env_file = ".env"
         extra = "ignore"  # ignora variables del .env que no estén declaradas aquí
