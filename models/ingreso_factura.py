@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey
 from core.database import Base
-from datetime import datetime
+from core.timezone import ahora_utc
 
 class IngresoFactura(Base):
     __tablename__ = "ingresos_factura"
@@ -8,7 +8,7 @@ class IngresoFactura(Base):
     id = Column(Integer, primary_key=True, index=True)
     numero_factura = Column(String(50), nullable=False)
     proveedor = Column(String(100), nullable=False)
-    fecha = Column(DateTime, default=datetime.now)
+    fecha = Column(DateTime(timezone=True), default=ahora_utc)
     observaciones = Column(String(500), nullable=True)
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)  # tenant
 

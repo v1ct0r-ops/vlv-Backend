@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, Boolean
 from core.database import Base
-from datetime import datetime
+from core.timezone import ahora_utc
 from enum import Enum as PyEnum
 
 class TipoAjuste(PyEnum):
@@ -12,7 +12,7 @@ class Rendicion(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     chofer = Column(String(100), nullable=False, index=True)
-    fecha = Column(DateTime, default=datetime.now)
+    fecha = Column(DateTime(timezone=True), default=ahora_utc)
     bencina = Column(Numeric(12,2), nullable=False, default=0) # un solo campo, se descuenta del efectivo a rendir
     total_ventas = Column(Numeric(12,2), nullable=False, default=0)
     total_kg = Column(Integer, nullable=False, default=0)

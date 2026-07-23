@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import extract
+from sqlalchemy import extract, func
 from decimal import Decimal
 from typing import Optional
+
+from core.timezone import CHILE_TZ
 
 from models.producto import Producto
 from models.movimiento import MovimientoInventario, TipoMovimiento
@@ -132,10 +134,14 @@ class RendicionService:
             Rendicion.chofer == chofer,
             Rendicion.empresa_id == empresa_id,
         )
+        # La fecha se guarda en UTC (timestamptz). Para filtrar por mes/anio
+        # como los ve el chofer, se convierte al huso de Chile ANTES de extraer;
+        # si no, una rendicion de fin de mes por la noche caeria en el mes siguiente.
+        fecha_chile = func.timezone(str(CHILE_TZ), Rendicion.fecha)
         if mes is not None:
-            query = query.filter(extract("month", Rendicion.fecha) == mes)
+            query = query.filter(extract("month", fecha_chile) == mes)
         if anio is not None:
-            query = query.filter(extract("year", Rendicion.fecha) == anio)
+            query = query.filter(extract("year", fecha_chile) == anio)
         rendiciones = query.order_by(Rendicion.fecha.desc()).all()
         return [self.formatear_rendicion(r) for r in rendiciones]
 
