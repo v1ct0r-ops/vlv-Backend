@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from datetime import datetime
 from typing import List, Optional
+
+from core.timezone import a_chile_naive
 
 class VentaRendicionCreate(BaseModel):
     producto_id: int
@@ -50,6 +52,10 @@ class RendicionRead(BaseModel):
     efectivo_a_rendir: int
     observaciones: Optional[str]
 
+    @field_serializer("fecha")
+    def _fecha_chile(self, v: datetime) -> datetime | None:
+        return a_chile_naive(v)
+
     class Config:
         from_attributes = True
 
@@ -63,6 +69,10 @@ class RendicionResumen(BaseModel):
     total_comision: int
     comision_pagada: bool
     efectivo_a_rendir: int
+
+    @field_serializer("fecha")
+    def _fecha_chile(self, v: datetime) -> datetime | None:
+        return a_chile_naive(v)
 
     class Config:
         from_attributes = True

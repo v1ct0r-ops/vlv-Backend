@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from enum import Enum
 from datetime import datetime
+
+from core.timezone import a_chile_naive
 
 class TipoMovimiento(str, Enum):
     VENTA = "VENTA"
@@ -21,6 +23,10 @@ class MovimientoRead (BaseModel):
     total: int
     tipo: str
     fecha: datetime
+
+    @field_serializer("fecha")
+    def _fecha_chile(self, v: datetime) -> datetime | None:
+        return a_chile_naive(v)
 
     class Config:
         from_attributes= True

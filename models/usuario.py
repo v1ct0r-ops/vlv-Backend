@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
 from core.database import Base
+from core.timezone import ahora_utc
 
 
 class Usuario(Base):
@@ -22,7 +22,7 @@ class Usuario(Base):
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)
     empresa = relationship("Empresa", back_populates="usuarios")
 
-    creado_en = Column(DateTime, nullable=False, default=datetime.now)
+    creado_en = Column(DateTime(timezone=True), nullable=False, default=ahora_utc)
 
     __table_args__ = (
         # Multi-tenant real: el email es único DENTRO de una empresa, no globalmente.
