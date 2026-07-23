@@ -57,6 +57,44 @@ def migrate_add_empresa_id(db: Session, empresa_id: int) -> None:
         print(f" Migración: empresa_id agregada a {tabla} (backfill empresa {empresa_id}).")
 
     _migrar_unique_producto_formato(db)
+    _migrar_fechas_a_timestamptz(db)
+
+
+# (tabla, columna) que guardan fechas y deben ser timestamptz (UTC en BD).
+_COLUMNAS_FECHA = [
+    ("movimientos_inventarios", "fecha"),
+    ("rendiciones", "fecha"),
+    ("ingresos_factura", "fecha"),
+    ("usuarios", "creado_en"),
+    ("empresas", "creado_en"),
+]
+
+
+def _migrar_fechas_a_timestamptz(db: Session) -> None:
+    """Convierte las columnas de fecha de `timestamp` (naive) a `timestamptz`.
+
+    Las filas viejas se guardaron con datetime.now() en un servidor UTC, o sea
+    su hora naive YA es UTC. Por eso el USING reinterpreta el valor como UTC
+    (`AT TIME ZONE 'UTC'`), sin desplazarlo. Idempotente: si la columna ya es
+    timestamptz, no hace nada. Solo postgres (en sqlite no aplica el tipo)."""
+    if db.get_bind().dialect.name != "postgresql":
+        return
+
+    for tabla, columna in _COLUMNAS_FECHA:
+        q = text(
+            "SELECT data_type FROM information_schema.columns "
+            "WHERE table_name = :t AND column_name = :c"
+        )
+        fila = db.execute(q, {"t": tabla, "c": columna}).first()
+        if fila is None or fila[0] == "timestamp with time zone":
+            continue  # tabla nueva ya nace correcta, o no existe aún
+
+        db.execute(text(
+            f"ALTER TABLE {tabla} ALTER COLUMN {columna} "
+            f"TYPE timestamptz USING {columna} AT TIME ZONE 'UTC'"
+        ))
+        db.commit()
+        print(f" Migración: {tabla}.{columna} convertida a timestamptz (UTC).")
 
 
 def _existe_constraint(db: Session, nombre: str) -> bool:

@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from datetime import datetime
 from typing import List, Optional
+
+from core.timezone import a_chile_naive
 
 class ItemFacturaCreate(BaseModel):
     producto_id: int
@@ -32,6 +34,10 @@ class IngresoFacturaRead(BaseModel):
     total_kg: int
     total_costo: Optional[int]
 
+    @field_serializer("fecha")
+    def _fecha_chile(self, v: datetime) -> datetime | None:
+        return a_chile_naive(v)
+
     class Config:
         from_attributes = True
 
@@ -42,6 +48,10 @@ class IngresoFacturaResumen(BaseModel):
     proveedor: str
     fecha: datetime
     total_unidades: int
+
+    @field_serializer("fecha")
+    def _fecha_chile(self, v: datetime) -> datetime | None:
+        return a_chile_naive(v)
 
     class Config:
         from_attributes = True

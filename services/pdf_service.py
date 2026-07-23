@@ -11,6 +11,8 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 )
 
+from core.timezone import a_chile_naive
+
 COLOR_PRIMARIO = colors.HexColor("#1a3c5e")
 COLOR_FILA_ALTERNA = colors.HexColor("#eef2f7")
 
@@ -111,7 +113,7 @@ def generar_pdf_rendicion(rendicion: dict) -> bytes:
     elementos.append(Paragraph("Rendición de cuenta — Chofer", estilos["TituloDoc"]))
     elementos.append(Paragraph(
         f"Folio N° {rendicion['id']} &nbsp;|&nbsp; Chofer: <b>{rendicion['chofer']}</b> "
-        f"&nbsp;|&nbsp; Fecha: {rendicion['fecha'].strftime('%d-%m-%Y %H:%M')}",
+        f"&nbsp;|&nbsp; Fecha: {a_chile_naive(rendicion['fecha']).strftime('%d-%m-%Y %H:%M')}",
         estilos["Subtitulo"],
     ))
     elementos.append(Spacer(1, 2 * mm))
@@ -208,7 +210,7 @@ def generar_pdf_factura(factura: dict) -> bytes:
     elementos.append(Paragraph(
         f"Factura N° {factura['numero_factura']} &nbsp;|&nbsp; "
         f"Proveedor: <b>{factura['proveedor']}</b> &nbsp;|&nbsp; "
-        f"Fecha: {factura['fecha'].strftime('%d-%m-%Y %H:%M')}",
+        f"Fecha: {a_chile_naive(factura['fecha']).strftime('%d-%m-%Y %H:%M')}",
         estilos["Subtitulo"],
     ))
     elementos.append(Spacer(1, 2 * mm))

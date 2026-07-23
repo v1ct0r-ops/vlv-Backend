@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, Numeric, ForeignKey,String, DateTime
 from core.database import Base
-from datetime import datetime
+from core.timezone import ahora_utc
 from enum import Enum as PyEnum
 
 class TipoMovimiento(PyEnum):
@@ -17,6 +17,6 @@ class MovimientoInventario(Base):
     precio_unitario = Column(Numeric(10,2), nullable=False)
     total = Column(Numeric(10,2), nullable=False)
     tipo = Column(String(20), default="VENTA")
-    fecha = Column(DateTime, default=datetime.now)
+    fecha = Column(DateTime(timezone=True), default=ahora_utc)
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)  # tenant
 
