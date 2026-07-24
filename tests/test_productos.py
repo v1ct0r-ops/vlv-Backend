@@ -35,7 +35,7 @@ def test_no_permite_formato_duplicado(client):
     respuesta = client.post("/productos/", json={
         "nombre": "Gas Duplicado",
         "formato": "5kg",
-        "precio_unitario": 9000,
+        "precio_venta": 9000,
     })
     assert respuesta.status_code == 409
     assert len(client.get("/productos/").json()) == 5
@@ -45,7 +45,7 @@ def test_no_permite_formato_fuera_de_los_5(client):
     respuesta = client.post("/productos/", json={
         "nombre": "Gas Raro",
         "formato": "33kg",
-        "precio_unitario": 9000,
+        "precio_venta": 9000,
     })
     assert respuesta.status_code == 422
 
@@ -53,12 +53,12 @@ def test_no_permite_formato_fuera_de_los_5(client):
 def test_actualizar_precio_y_comision(client):
     producto = client.get("/productos/").json()[0]
     respuesta = client.put(f"/productos/{producto['id']}", json={
-        "precio_unitario": 9990,
+        "precio_venta": 9990,
         "comision_unitaria": 2000,
     })
     assert respuesta.status_code == 200
     actualizado = respuesta.json()
-    assert actualizado["precio_unitario"] == 9990
+    assert actualizado["precio_venta"] == 9990
     assert actualizado["comision_unitaria"] == 2000
     # el formato no cambia
     assert actualizado["formato"] == producto["formato"]

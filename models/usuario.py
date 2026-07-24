@@ -15,7 +15,7 @@ class Usuario(Base):
     hashed_password = Column(String(255), nullable=False)
 
     nombre = Column(String(120), nullable=False)
-    rol = Column(String(20), nullable=False, default="operador")  # "admin" | "operador"
+    rol = Column(String(20), nullable=False, default="operador")  # "admin" | "operador" | "chofer" (ver core/roles.py)
     activo = Column(Boolean, nullable=False, default=True)         # baja lógica, no DELETE
 
     # Discriminador de tenant. Obligatorio desde hoy: cada usuario pertenece a una empresa.

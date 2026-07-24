@@ -36,7 +36,7 @@ def seed_productos(db: Session, empresa_id: int | None = None):
             db.add(Producto(
                 nombre="Gas GLP",
                 formato=formato.value,
-                precio_unitario=PRECIO_DEFAULT[formato],
+                precio_venta=PRECIO_DEFAULT[formato],
                 stock_actual=0,
                 kg_por_unidad=KG_POR_FORMATO[formato],
                 comision_unitaria=COMISION_POR_FORMATO[formato],
