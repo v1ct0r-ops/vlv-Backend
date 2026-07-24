@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.security import decode_access_token
+from core.roles import Rol
 from schemas.auth import TokenData
 from models.usuario import Usuario
 
@@ -65,12 +66,28 @@ def get_current_user(
     return usuario
 
 
-def get_current_admin(current: Usuario = Depends(get_current_user)) -> Usuario:
-    """Encadena sobre get_current_user y además exige rol admin. Úsala para
-    rutas de gestión (crear usuarios, editar precios, etc.)."""
-    if current.rol != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Requiere rol de administrador",
-        )
-    return current
+def require_roles(*roles_permitidos: str):
+    """Factory de dependencias: construye una dependencia que exige que el rol
+    del usuario esté en `roles_permitidos`.
+
+    Devolvemos una FUNCIÓN (no ejecutamos la comprobación aquí) porque FastAPI
+    necesita un callable para resolver con Depends en cada request. Así una sola
+    pieza cubre cualquier combinación de roles sin duplicar código:
+
+        Depends(require_roles(Rol.ADMIN))               # solo admin
+        Depends(require_roles(Rol.ADMIN, Rol.CHOFER))   # admin o chofer
+    """
+    def dependency(current: Usuario = Depends(get_current_user)) -> Usuario:
+        if current.rol not in roles_permitidos:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permiso para realizar esta acción",
+            )
+        return current
+    return dependency
+
+
+# Dependencia concreta para rutas exclusivas de administrador (crear usuarios,
+# editar precios, borrar productos). Se mantiene el nombre porque ya se usa en
+# los routers; internamente es un caso particular de require_roles.
+get_current_admin = require_roles(Rol.ADMIN)
