@@ -7,7 +7,14 @@ class Producto(Base):
     id = Column (Integer, primary_key= True, index = True)
     nombre = Column(String(50), nullable = False)
     formato = Column(String(30), nullable = False)  # único POR empresa, no global (ver __table_args__)
-    precio_unitario = Column(Numeric(10,2), nullable = False)
+
+    # --- Estructura de precio (solo la ve/edita el admin) ---
+    precio_compra = Column(Numeric(10,2), nullable = False, default = 0)  # costo del producto para la pyme
+    ganancia = Column(Numeric(10,2), nullable = False, default = 0)       # margen que el admin decide ganar por unidad
+    # precio final que ve el chofer. Normalmente = precio_compra + ganancia,
+    # pero el admin puede sobrescribirlo manualmente al editar.
+    precio_venta = Column(Numeric(10,2), nullable = False)
+
     stock_actual = Column(Integer, nullable = False, default =0)
     kg_por_unidad = Column(Integer, nullable = False) # kilos por unidad segun formato (gruas = 15)
     comision_unitaria = Column(Numeric(10,2), nullable = False, default = 0) # comision del chofer por unidad vendida
